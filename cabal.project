@@ -1,1 +1,3 @@
-packages: .
+packages:
+    .
+    async-2.2.5/
