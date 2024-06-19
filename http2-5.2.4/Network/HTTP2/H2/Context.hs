@@ -278,16 +278,16 @@ openOddStreamWait ctx@Context{oddStreamTable, mySettings, peerSettings} = do
     let rxws = initialWindowSize mySettings
     case mMaxConc of
         Nothing -> do
-            _ <- traceEventIO "openOdd - No concurrent stream"
+            -- _ <- traceEventIO "openOdd - No concurrent stream"
             sid <- atomically $ getMyNewStreamId ctx
             txws <- initialWindowSize <$> readIORef peerSettings
             newstrm <- newOddStream sid txws rxws
             insertOdd oddStreamTable sid newstrm
             return (sid, newstrm)
         Just maxConc -> do
-            _ <- traceEventIO $ "openOdd - max:" ++ show maxConc
+            -- _ <- traceEventIO $ "openOdd - max:" ++ show maxConc
             sid <- atomically $ do
-                unsafeIOToSTM $ traceEventIO "openOdd - incOdd:"
+                -- unsafeIOToSTM $ traceEventIO "openOdd - incOdd:"
                 waitIncOdd oddStreamTable maxConc
                 getMyNewStreamId ctx
             txws <- initialWindowSize <$> readIORef peerSettings

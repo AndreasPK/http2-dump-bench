@@ -167,12 +167,12 @@ sendRequest ctx@Context{..} mgr scheme auth (Request req) = do
     mstrm0 <- lookupEvenCache evenStreamTable method path
     case mstrm0 of
         Just strm0 -> do
-            traceEventIO "sendReq - Just"
+            -- traceEventIO "sendReq - Just"
             deleteEvenCache evenStreamTable method path
             return strm0
         Nothing -> do
             -- we take this route - always
-            traceEventIO "sendReq - Nothing"
+            -- traceEventIO "sendReq - Nothing"
             -- Arch/Sender is originally implemented for servers where
             -- the ordering of responses can be out-of-order.
             -- But for clients, the ordering must be maintained.
@@ -189,14 +189,14 @@ sendRequest ctx@Context{..} mgr scheme auth (Request req) = do
             (sid, newstrm) <- openOddStreamWait ctx
             case outObjBody req of
                 OutBodyStreaming strmbdy -> do
-                    traceEventIO "OutBodyStream"
+                    -- traceEventIO "OutBodyStream"
                     sendStreaming ctx mgr req' sid newstrm $ \iface ->
                         outBodyUnmask iface $ strmbdy (outBodyPush iface) (outBodyFlush iface)
                 OutBodyStreamingUnmask strmbdy -> do
-                    traceEventIO "OutBodyStreamingUnmask"
+                    -- traceEventIO "OutBodyStreamingUnmask"
                     sendStreaming ctx mgr req' sid newstrm strmbdy
                 _ -> atomically $ do
-                    unsafeIOToSTM $ traceEventIO "sendRequest-OutOther"
+                    -- unsafeIOToSTM $ traceEventIO "sendRequest-OutOther"
                     sidOK <- readTVar outputQStreamID
                     check (sidOK == sid)
                     writeTVar outputQStreamID (sid + 2)

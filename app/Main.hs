@@ -28,11 +28,18 @@ import Control.Monad
 import System.Environment
 import Debug.Trace
 
-main :: IO ()
-main = do
-    _ <- forkIO $ myServer
-    threadDelay 1000000
-    runClient 111
+serverName :: String
+-- serverName = "127.0.0.1"
+serverName = "10.0.0.8"
+
+main = myServer
+-- main = runClient 50000
+
+-- main :: IO ()
+-- main = do
+--     -- _ <- forkIO $ myServer
+--     -- threadDelay 1000000
+--     runClient 111
 
 {-# NOINLINE bs_server_response #-}
 bs_server_response :: ByteString
@@ -51,8 +58,7 @@ myServer = runTCPServer (Just serverName) "12080" runHTTP2Server
         body = byteString bs_server_response
 
 
-serverName :: String
-serverName = "127.0.0.1"
+
 
 runClient :: Int -> IO ()
 runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName

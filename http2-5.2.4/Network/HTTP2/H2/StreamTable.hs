@@ -74,7 +74,7 @@ insertOdd var k v = atomically $ modifyTVar var $ \OddStreamTable{..} ->
      in OddStreamTable oddConc' oddTable'
 
 insertOdd' :: TVar OddStreamTable -> IntMap.Key -> Stream -> IO ()
-insertOdd' var k v = atomically $ traceEvent "insertOdd'" $ modifyTVar var $ \OddStreamTable{..} ->
+insertOdd' var k v = atomically $ modifyTVar var $ \OddStreamTable{..} ->
     let oddTable' = IntMap.insert k v oddTable
      in OddStreamTable oddConc oddTable'
 
