@@ -29,23 +29,25 @@ import System.Environment
 
 main :: IO ()
 main = do
-    args <- getArgs
     _ <- forkIO $ myServer
     threadDelay 1000000
-    runClient 100
+    runClient 200
 
+{-# NOINLINE bs_server_response #-}
+bs_server_response :: ByteString
+bs_server_response = BS.concat $ Prelude.replicate 9 $ BS.replicate 2048 66
 
 myServer :: IO ()
 myServer = runTCPServer (Just serverName) "12080" runHTTP2Server
   where
-    runHTTP2Server s = E.bracket (allocSimpleConfig s 4096)
+    runHTTP2Server s = E.bracket (allocSimpleConfig s 2048)
                                  freeSimpleConfig
                                  (\config -> Server.run defaultServerConfig config server)
     server _req _aux sendResponse = sendResponse response []
       where
         response = responseBuilder ok200 header body
         header = [(fromString "Content-Type", C8.pack "text/plain")] :: ResponseHeaders
-        body = BSB.string8 "Hello, world!\n"
+        body = byteString bs_server_response
 
 
 serverName :: String
@@ -55,25 +57,31 @@ runClient :: Int -> IO ()
 runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
   where
     cliconf host = defaultClientConfig { authority = host }
-    runHTTP2Client host s = E.bracket (allocSimpleConfig s 4096)
+    runHTTP2Client host s = E.bracket (allocSimpleConfig s 2048)
                                       freeSimpleConfig
                                       (\conf -> Client.run (cliconf host) conf client)
     client :: Client ()
     client sendRequest _aux = forM_ [0..requests :: Int] $ \i -> do
         when (i `mod` 50 == 0) $ print i
         let req0 = requestNoBody methodGet (C8.pack "/") []
+            -- Runtime is essentially linear to the number of invocations of this.
+            -- Sending more data by comparison makes hardly a dent.
             client0 = sendRequest req0 $ \rsp -> do
-                -- print rsp
-                !_r <- getResponseBodyChunk rsp :: IO C8.ByteString
+
+                let readAll bytes_read reads = do
+                      -- print bytes_read
+                      chunk <- getResponseBodyChunk rsp
+                      if BS.null chunk then return (bytes_read, reads) else readAll (bytes_read + BS.length chunk) (reads+1 :: Int)
+                return $! rsp
+                -- (bytes_read,reads) <- readAll 0 0
+                -- when (i `mod` 50 == 0) $ print (bytes_read,reads)
                 return ()
-                -- C8.putStrLn r
-            req1 = requestNoBody methodGet (C8.pack "/foo") []
-            client1 = sendRequest req1 $ \rsp -> do
-                -- print rsp
-                !_r <- getResponseBodyChunk rsp
-                return ()
-        ex <- E.try $ concurrently_ client0 client1
+
+        ex <- E.try $ client0
         case ex of
           Left  e  -> print (e :: HTTP2Error)
           Right () -> return ()
-                      --putStrLn "OK"
+        -- ex <- E.try $ client0
+        -- case ex of
+        --   Left  e  -> print (e :: HTTP2Error)
+        --   Right () -> return ()
