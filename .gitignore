@@ -1,1 +1,4 @@
+*.prof
 dist-newstyle
+*.eventlog
+*.log

@@ -26,16 +26,17 @@ import Control.Concurrent
 import Control.Monad
 
 import System.Environment
+import Debug.Trace
 
 main :: IO ()
 main = do
     _ <- forkIO $ myServer
     threadDelay 1000000
-    runClient 200
+    runClient 111
 
 {-# NOINLINE bs_server_response #-}
 bs_server_response :: ByteString
-bs_server_response = BS.concat $ Prelude.replicate 9 $ BS.replicate 2048 66
+bs_server_response = BS.concat $ Prelude.replicate 3 $ BS.replicate 2048 66
 
 myServer :: IO ()
 myServer = runTCPServer (Just serverName) "12080" runHTTP2Server
@@ -63,18 +64,20 @@ runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
     client :: Client ()
     client sendRequest _aux = forM_ [0..requests :: Int] $ \i -> do
         when (i `mod` 50 == 0) $ print i
+        print i
         let req0 = requestNoBody methodGet (C8.pack "/") []
             -- Runtime is essentially linear to the number of invocations of this.
             -- Sending more data by comparison makes hardly a dent.
-            client0 = sendRequest req0 $ \rsp -> do
+            client0 = sendRequest (req0) $ \rsp -> do
 
                 let readAll bytes_read reads = do
                       -- print bytes_read
                       chunk <- getResponseBodyChunk rsp
                       if BS.null chunk then return (bytes_read, reads) else readAll (bytes_read + BS.length chunk) (reads+1 :: Int)
-                return $! rsp
-                -- (bytes_read,reads) <- readAll 0 0
-                -- when (i `mod` 50 == 0) $ print (bytes_read,reads)
+                -- !_ <- return $! rsp
+                -- chunk <- getResponseBodyChunk rsp
+                (bytes_read,reads) <- readAll 0 0
+                when (i `mod` 50 == 0) $ print (bytes_read,reads)
                 return ()
 
         ex <- E.try $ client0
