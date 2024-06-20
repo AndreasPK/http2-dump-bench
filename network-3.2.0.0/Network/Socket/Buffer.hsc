@@ -92,8 +92,10 @@ sendBuf s str len = fromIntegral <$> do
 -- bug is supported.
     fd <- socket2FD s
     let clen = fromIntegral len
-    throwSocketErrorIfMinus1Retry "Network.Socket.sendBuf" $
-      writeRawBufferPtr "Network.Socket.sendBuf" fd (castPtr str) 0 clen
+    throwSocketErrorIfMinus1Retry "Network.Socket.sendBuf" $ do
+      r <- writeRawBufferPtr "Network.Socket.sendBuf" fd (castPtr str) 0 clen
+      traceEventIO $ "sendBuf" ++ show (clen,r)
+      return r
 #else
     withFdSocket s $ \fd -> do
         let flags = 0
@@ -150,11 +152,13 @@ recvBuf s ptr nbytes
 -- see comment in sendBuf above.
     fd <- socket2FD s
     let cnbytes = fromIntegral nbytes
-    len <- throwSocketErrorIfMinus1Retry "Network.Socket.recvBuf" $
-             readRawBufferPtr "Network.Socket.recvBuf" fd ptr 0 cnbytes
+    len <- throwSocketErrorIfMinus1Retry "Network.Socket.recvBuf" $ do
+             r <- readRawBufferPtr "Network.Socket.recvBuf" fd ptr 0 cnbytes
+             traceEventIO $ "c_recv:" ++ show (nbytes,r,nbytes-fromIntegral r)
+             when (r == -1) $ getErrno >>= \errno -> traceEventIO $ "error:" ++ show (errnoToIOError "recv" errno Nothing Nothing)
+             return r
 #else
     len <- withFdSocket s $ \fd -> do
-        -- traceEventIO $ "c_recv:s:" ++ (show nbytes)
         throwSocketErrorWaitRead s "Network.Socket.recvBuf" $ do
              r <- c_recv fd (castPtr ptr) (fromIntegral nbytes) 0{-flags-}
              traceEventIO $ "c_recv:" ++ show (nbytes,r,nbytes-fromIntegral r)
