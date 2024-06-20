@@ -29,17 +29,23 @@ import System.Environment
 import Debug.Trace
 
 serverName :: String
--- serverName = "127.0.0.1"
-serverName = "10.0.0.8"
+serverName = "127.0.0.1"
+-- serverName = "10.0.0.1"
 
-main = myServer
+-- 50k requests with linux(server)<->windows(client) takes: ~60s
+-- 50k requests with windows(server)<->linux(client) takes: ~46s
+
+-- 50k requests with windows(server)<->windows(client) takes: ~15s
+-- 50k requests with linux(server)<->linux(client) takes: >120s (I terminated it)
+
+-- main = myServer
 -- main = runClient 50000
 
--- main :: IO ()
--- main = do
---     -- _ <- forkIO $ myServer
---     -- threadDelay 1000000
---     runClient 111
+main :: IO ()
+main = do
+    _ <- forkIO $ myServer
+    threadDelay 500000
+    runClient 300
 
 {-# NOINLINE bs_server_response #-}
 bs_server_response :: ByteString
@@ -57,9 +63,6 @@ myServer = runTCPServer (Just serverName) "12080" runHTTP2Server
         header = [(fromString "Content-Type", C8.pack "text/plain")] :: ResponseHeaders
         body = byteString bs_server_response
 
-
-
-
 runClient :: Int -> IO ()
 runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
   where
@@ -69,8 +72,8 @@ runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
                                       (\conf -> Client.run (cliconf host) conf client)
     client :: Client ()
     client sendRequest _aux = forM_ [0..requests :: Int] $ \i -> do
-        when (i `mod` 50 == 0) $ print i
-        print i
+        -- when (i `mod` 50 == 0) $ print i
+        -- print i
         let req0 = requestNoBody methodGet (C8.pack "/") []
             -- Runtime is essentially linear to the number of invocations of this.
             -- Sending more data by comparison makes hardly a dent.
