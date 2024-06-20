@@ -56,14 +56,14 @@ main = do
         tid <- forkIO $ myServer
         labelThread tid "server"
         threadDelay 500000
-        runClient 300
+        runClient 111
     else do
       when do_client $ runClient 300
       when do_server $ myServer
 
 {-# NOINLINE bs_server_response #-}
 bs_server_response :: ByteString
-bs_server_response = BS.concat $ P.replicate 100 $ BS.replicate 1960 66
+bs_server_response = BS.concat $ P.replicate 2 $ BS.replicate 1960 66
 
 myServer :: IO ()
 myServer = runTCPServer (Just serverName) "12080" runHTTP2Server
@@ -88,8 +88,8 @@ runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
     client sendRequest _aux = do
       tref <- newIORef =<< getCurrentTime
       forM_ [0..requests :: Int] $ \i -> do
-        -- when (i `mod` 50 == 0) $ print i
-        print i
+        when (i `mod` 50 == 0) $ print i
+        -- print i
         let req0 = requestNoBody methodGet (C8.pack "/") []
             -- Runtime is essentially linear to the number of invocations of this.
             -- Sending more data by comparison makes hardly a dent.
@@ -108,7 +108,7 @@ runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
                   last <- readIORef tref
                   t <- getCurrentTime
                   writeIORef tref t
-                  -- print (bytes_read,reads, t `diffUTCTime` last)
+                  print (bytes_read,reads, t `diffUTCTime` last)
                 return ()
 
         ex <- E.try $ client0
