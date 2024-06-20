@@ -76,8 +76,9 @@ informWindowUpdate Context{controlQ, rxFlow} Stream{streamNumber, streamRxFlow} 
         let frame = windowUpdateFrame 0 ws
             cframe = CFrames Nothing [frame]
         enqueueControl controlQ cframe
+    when (isJust mxc) $ traceEventIO $ "windowUpdate-xc:" ++ show (len,mxc)
     mxs <- atomicModifyIORef streamRxFlow $ maybeOpenRxWindow len FCTWindowUpdate
-    traceEventIO $ "windowUpdate:" ++ show (len,mxs)
+    when (isJust mxs) $ traceEventIO $ "windowUpdate-xs:" ++ show (len,mxs)
     forM_ mxs $ \ws -> do
         let frame = windowUpdateFrame streamNumber ws
             cframe = CFrames Nothing [frame]
