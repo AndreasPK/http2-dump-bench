@@ -194,6 +194,7 @@ worker wc@WorkerConf{..} mgr server = do
         cont2 <- getThreadContinue tcont
         clearStreamInfo sinfo
         when (cont1 && cont2) $ go sinfo tcont th
+    pauseRequestBody :: InpObj -> T.Handle -> InpObj
     pauseRequestBody req th = req{inpObjBody = readBody'}
       where
         readBody = inpObjBody req

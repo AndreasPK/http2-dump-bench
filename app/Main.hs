@@ -27,6 +27,10 @@ import Control.Monad
 
 import System.Environment
 import Debug.Trace
+import GHC.Conc
+import Data.Time.Clock
+import Data.IORef
+import Prelude as P
 
 serverName :: String
 serverName = "127.0.0.1"
@@ -39,22 +43,32 @@ serverName = "127.0.0.1"
 -- 50k requests with linux(server)<->linux(client) takes: >120s (I terminated it)
 
 -- main = myServer
--- main = runClient 50000
+-- main = runClient 1000
 
 main :: IO ()
 main = do
-    _ <- forkIO $ myServer
-    threadDelay 500000
-    runClient 300
+    args <- getArgs
+    print args
+    let do_client = ("client" `P.elem` args)
+        do_server = ("server" `P.elem` args)
+
+    if do_client && do_server || not do_client && not do_server then do
+        tid <- forkIO $ myServer
+        labelThread tid "server"
+        threadDelay 500000
+        runClient 300
+    else do
+      when do_client $ runClient 300
+      when do_server $ myServer
 
 {-# NOINLINE bs_server_response #-}
 bs_server_response :: ByteString
-bs_server_response = BS.concat $ Prelude.replicate 3 $ BS.replicate 2048 66
+bs_server_response = BS.concat $ P.replicate 100 $ BS.replicate 1960 66
 
 myServer :: IO ()
 myServer = runTCPServer (Just serverName) "12080" runHTTP2Server
   where
-    runHTTP2Server s = E.bracket (allocSimpleConfig s 2048)
+    runHTTP2Server s = E.bracket (allocSimpleConfig s 1048)
                                  freeSimpleConfig
                                  (\config -> Server.run defaultServerConfig config server)
     server _req _aux sendResponse = sendResponse response []
@@ -67,13 +81,15 @@ runClient :: Int -> IO ()
 runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
   where
     cliconf host = defaultClientConfig { authority = host }
-    runHTTP2Client host s = E.bracket (allocSimpleConfig s 2048)
+    runHTTP2Client host s = E.bracket (allocSimpleConfig s 1048)
                                       freeSimpleConfig
                                       (\conf -> Client.run (cliconf host) conf client)
     client :: Client ()
-    client sendRequest _aux = forM_ [0..requests :: Int] $ \i -> do
+    client sendRequest _aux = do
+      tref <- newIORef =<< getCurrentTime
+      forM_ [0..requests :: Int] $ \i -> do
         -- when (i `mod` 50 == 0) $ print i
-        -- print i
+        print i
         let req0 = requestNoBody methodGet (C8.pack "/") []
             -- Runtime is essentially linear to the number of invocations of this.
             -- Sending more data by comparison makes hardly a dent.
@@ -83,10 +99,16 @@ runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
                       -- print bytes_read
                       chunk <- getResponseBodyChunk rsp
                       if BS.null chunk then return (bytes_read, reads) else readAll (bytes_read + BS.length chunk) (reads+1 :: Int)
+
                 -- !_ <- return $! rsp
                 -- chunk <- getResponseBodyChunk rsp
                 (bytes_read,reads) <- readAll 0 0
-                when (i `mod` 50 == 0) $ print (bytes_read,reads)
+                !_ <- getResponseTrailers rsp
+                when (i `mod` 50 == 0) $ do
+                  last <- readIORef tref
+                  t <- getCurrentTime
+                  writeIORef tref t
+                  -- print (bytes_read,reads, t `diffUTCTime` last)
                 return ()
 
         ex <- E.try $ client0

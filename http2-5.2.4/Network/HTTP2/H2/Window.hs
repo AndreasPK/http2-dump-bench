@@ -15,6 +15,8 @@ import Network.HTTP2.H2.EncodeFrame
 import Network.HTTP2.H2.Queue
 import Network.HTTP2.H2.Types
 
+import Debug.Trace
+
 getStreamWindowSize :: Stream -> IO WindowSize
 getStreamWindowSize Stream{streamTxFlow} =
     txWindowSize <$> readTVarIO streamTxFlow
@@ -75,6 +77,7 @@ informWindowUpdate Context{controlQ, rxFlow} Stream{streamNumber, streamRxFlow} 
             cframe = CFrames Nothing [frame]
         enqueueControl controlQ cframe
     mxs <- atomicModifyIORef streamRxFlow $ maybeOpenRxWindow len FCTWindowUpdate
+    traceEventIO $ "windowUpdate:" ++ show (len,mxs)
     forM_ mxs $ \ws -> do
         let frame = windowUpdateFrame streamNumber ws
             cframe = CFrames Nothing [frame]

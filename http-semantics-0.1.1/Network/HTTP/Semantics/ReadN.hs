@@ -25,6 +25,7 @@ putIORef ref x = atomicModifyIORef ref (\case
                                         )
 
 -- | Naive implementation for readN.
+-- returns the requested number of bytes or nothing
 defaultReadN :: Socket -> IORef (Maybe B.ByteString) -> ReadN
 defaultReadN _ _ 0 = return B.empty
 defaultReadN s ref n = do
@@ -39,6 +40,7 @@ defaultReadN s ref n = do
                 else
                     if B.length bs == n
                         then return bs
+                        -- Not enough data
                         else loop bs
         Just bs
             | B.length bs == n -> return bs
@@ -49,8 +51,10 @@ defaultReadN s ref n = do
             | otherwise -> loop bs
   where
     loop bs = do
+        -- bytes still to read
         let n' = n - B.length bs
         bs1 <- N.recv s n'
+        -- no new data
         if B.null bs1
             then return B.empty
             else do

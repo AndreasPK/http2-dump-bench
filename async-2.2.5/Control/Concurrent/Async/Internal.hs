@@ -100,7 +100,9 @@ async = inline asyncUsing rawForkIO
 
 -- | Like 'async' but using 'forkOS' internally.
 asyncBound :: IO a -> IO (Async a)
-asyncBound = asyncUsing forkOS
+asyncBound x = do
+    print "forkOS"
+    asyncUsing forkOS x
 
 -- | Like 'async' but using 'forkOn' internally.
 asyncOn :: Int -> IO a -> IO (Async a)
@@ -149,7 +151,9 @@ withAsync = inline withAsyncUsing rawForkIO
 
 -- | Like 'withAsync' but uses 'forkOS' internally.
 withAsyncBound :: IO a -> (Async a -> IO b) -> IO b
-withAsyncBound = withAsyncUsing forkOS
+withAsyncBound x f= do
+  print "forkOsAsyncBound"
+  withAsyncUsing forkOS x f
 
 -- | Like 'withAsync' but uses 'forkOn' internally.
 withAsyncOn :: Int -> IO a -> (Async a -> IO b) -> IO b

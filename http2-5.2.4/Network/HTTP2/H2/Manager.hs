@@ -32,6 +32,7 @@ import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 
 import Imports
+import GHC.Conc (labelThread)
 
 ----------------------------------------------------------------
 
@@ -55,7 +56,8 @@ start timmgr = do
     q <- newTQueueIO
     ref <- newIORef noAction
     cnt <- newTVarIO 0
-    void $ forkIO $ go q Set.empty ref
+    tid <- forkIO $ go q Set.empty ref
+    labelThread tid "manager"
     return $ Manager q ref cnt timmgr
   where
     go q tset0 ref = do
