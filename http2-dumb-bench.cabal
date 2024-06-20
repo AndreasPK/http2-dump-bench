@@ -32,4 +32,4 @@ executable http2-dumb-bench
     hs-source-dirs:   app
     default-language: GHC2021
 
-    ghc-options: -threaded -rtsopts
+    ghc-options: -threaded -rtsopts -debug

@@ -151,6 +151,8 @@ recvBuf s ptr nbytes
 #if defined(mingw32_HOST_OS)
 -- see comment in sendBuf above.
     fd <- socket2FD s
+    traceEventIO $ "start_c_recv:" ++ show (nbytes)
+
     let cnbytes = fromIntegral nbytes
     len <- throwSocketErrorIfMinus1Retry "Network.Socket.recvBuf" $ do
              r <- readRawBufferPtr "Network.Socket.recvBuf" fd ptr 0 cnbytes
@@ -158,6 +160,7 @@ recvBuf s ptr nbytes
              when (r == -1) $ getErrno >>= \errno -> traceEventIO $ "error:" ++ show (errnoToIOError "recv" errno Nothing Nothing)
              return r
 #else
+    traceEventIO $ "start_c_recv:" ++ show (nbytes)
     len <- withFdSocket s $ \fd -> do
         throwSocketErrorWaitRead s "Network.Socket.recvBuf" $ do
              r <- c_recv fd (castPtr ptr) (fromIntegral nbytes) 0{-flags-}
