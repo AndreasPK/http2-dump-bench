@@ -27,23 +27,24 @@ executable http2-dumb-bench
         unliftio >= 0.2.25.0,
         network-run >= 0.3.0,
         http-types >= 0.12.4,
-        time
+        time,
+        timeit >= 2.0
 
     hs-source-dirs:   app
     default-language: GHC2021
 
     ghc-options: -threaded -rtsopts -debug
 
-executable ffi-test
-    import:           warnings
-    main-is:          Main.hs
-    build-depends:
-        base,
-        http2 >= 5.2.4,
-        bytestring >= 0.12.1.0,
-        network >= 3.2.0.0,
-        network-run >= 0.3.0,
+-- executable ffi-test
+--     import:           warnings
+--     main-is:          Main.hs
+--     build-depends:
+--         base,
+--         http2 >= 5.2.4,
+--         bytestring >= 0.12.1.0,
+--         network >= 3.2.0.0,
+--         network-run >= 0.3.0,
 
-    hs-source-dirs:   ffi
-    default-language: GHC2021
-    ghc-options: -threaded -rtsopts -debug
+--     hs-source-dirs:   ffi
+--     default-language: GHC2021
+--     ghc-options: -threaded -rtsopts -debug

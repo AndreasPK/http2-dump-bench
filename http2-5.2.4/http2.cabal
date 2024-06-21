@@ -124,7 +124,8 @@ library
         time-manager >=0.1 && <0.2,
         unix-time >=0.4.11 && <0.5,
         unliftio >=0.2 && <0.3,
-        utf8-string >=1.0 && <1.1
+        utf8-string >=1.0 && <1.1,
+        timeit >= 2
 
 executable h2c-client
     main-is:            h2c-client.hs

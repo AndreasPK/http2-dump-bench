@@ -11,6 +11,7 @@ import Network.HPACK
 import Network.HTTP2.H2.Types
 import Debug.Trace (traceEventIO)
 import qualified Data.ByteString as BS
+import System.TimeIt
 
 -- | Making simple configuration whose IO is not efficient.
 --   A write buffer is allocated internally.
@@ -25,8 +26,17 @@ allocSimpleConfig s bufsiz = do
             Config
                 { confWriteBuffer = buf
                 , confBufferSize = bufsiz
-                , confSendAll = \bs -> traceEventIO ("sendAll:" ++ show (BS.length bs)) >> sendAll s bs
-                , confReadN = defaultReadN s ref
+                , confSendAll = \bs -> do
+                    traceEventIO ("sendAll_start:" ++ show (BS.length bs))
+                    (time,r) <- timeItT $ sendAll s bs
+                    traceEventIO ("sendAll_end:" ++ show (BS.length bs, time))
+                    return r
+                , confReadN = \n -> do
+                    traceEventIO ("confReadN_start:" ++ show n)
+                    (time,r) <- timeItT $ defaultReadN s ref n
+                    traceEventIO ("confReadN_end:" ++ show (BS.length r, time))
+                    return r
+
                 , confPositionReadMaker = defaultPositionReadMaker
                 , confTimeoutManager = timmgr
                 , confMySockAddr = mysa
