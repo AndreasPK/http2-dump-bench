@@ -49,10 +49,10 @@ server = runTCPServer (Just "127.0.0.1") "3000" talk
                 -- payload
                 server_ms
         -- print server_msg
-        forM_ [0..1000 :: Int] $ \i -> do
+        forM_ [0..10000 :: Int] $ \i -> do
             -- print $ S.drop 1 $ server_msg
             sendAll s server_msg
-            threadDelay 100
+            threadDelay 1000
 
         print "done - server"
         threadDelay 5_000_000
