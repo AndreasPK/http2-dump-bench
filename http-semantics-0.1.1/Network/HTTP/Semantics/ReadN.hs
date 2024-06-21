@@ -11,6 +11,7 @@ import qualified Data.ByteString as B
 import Data.IORef
 import Network.Socket
 import qualified Network.Socket.ByteString as N
+import Debug.Trace (traceEventIO)
 
 -- | Reading n bytes.
 type ReadN = Int -> IO B.ByteString
@@ -30,6 +31,7 @@ defaultReadN :: Socket -> IORef (Maybe B.ByteString) -> ReadN
 defaultReadN _ _ 0 = return B.empty
 defaultReadN s ref n = do
     mbs <- tryTakeIORef ref
+    traceEventIO $ "defaultReadN:" ++ show (n, mbs)
     -- mbs <- readIORef ref
     -- writeIORef ref Nothing
     case mbs of
