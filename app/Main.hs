@@ -56,14 +56,14 @@ main = do
         tid <- forkIO $ myServer
         labelThread tid "server"
         threadDelay 500000
-        runClient 200
+        runClient 100
     else do
       when do_client $ runClient 300
       when do_server $ myServer
 
 {-# NOINLINE bs_server_response #-}
 bs_server_response :: ByteString
-bs_server_response = BS.concat $ P.replicate 1 $ BS.replicate 1500 66
+bs_server_response = BS.concat $ P.replicate 1 $ BS.replicate 2030 66
 
 myServer :: IO ()
 myServer = runTCPServer (Just serverName) "12080" runHTTP2Server
@@ -105,10 +105,13 @@ runClient requests = runTCPClient serverName "12080" $ runHTTP2Client serverName
                 (bytes_read,reads) <- readAll 0 0
                 !_ <- getResponseTrailers rsp
                 when (i `mod` 50 == 0) $ do
+                -- when True $ do
                   last <- readIORef tref
                   t <- getCurrentTime
                   writeIORef tref t
                   print (bytes_read,reads, t `diffUTCTime` last)
+                  traceEventIO $ show (bytes_read,reads, t `diffUTCTime` last)
+
                 return ()
 
         ex <- E.try $ client0

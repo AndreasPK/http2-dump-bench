@@ -24,6 +24,8 @@ import UnliftIO.STM
 import Imports hiding (insert)
 import Network.HTTP2.Frame
 import Network.HTTP2.H2
+import Debug.Trace
+import GHC.Conc (unsafeIOToSTM)
 
 ----------------------------------------------------------------
 
@@ -149,6 +151,7 @@ response wc@WorkerConf{..} mgr th tconf strm (Request req) (Response rsp) pps = 
         tbq <- newTBQueueIO 10 -- fixme: hard coding: 10
         writeOutputQ $ Output strm rsp otyp (Just tbq) (return ())
         let push b = do
+                traceEventIO "writeTBQueue_start"
                 T.pause th
                 atomically $ writeTBQueue tbq (StreamingBuilder b Nothing)
                 T.resume th
@@ -176,16 +179,18 @@ worker wc@WorkerConf{..} mgr server = do
             let req' = pauseRequestBody req th
             setStreamInfo sinfo strm
             T.resume th
-            T.tickle th
             let aux = Aux th mySockAddr peerSockAddr
             server (Request req') aux $ response wc mgr th tcont strm (Request req')
         cont1 <- case ex of
             Right () -> return True
             Left e@(SomeException _)
                 -- killed by the local worker manager
-                | Just KilledByHttp2ThreadManager{} <- E.fromException e -> return False
+                | Just KilledByHttp2ThreadManager{} <- E.fromException e -> do
+                    traceEventIO "worker:KilledByHttp2ThreadManager"
+                    return False
                 -- killed by the local timeout manager
                 | Just T.TimeoutThread <- E.fromException e -> do
+                    traceEventIO "worker:TimeoutThread"
                     cleanup sinfo
                     return True
                 | otherwise -> do

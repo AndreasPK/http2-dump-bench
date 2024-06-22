@@ -35,16 +35,17 @@ executable http2-dumb-bench
 
     ghc-options: -threaded -rtsopts -debug
 
--- executable ffi-test
---     import:           warnings
---     main-is:          Main.hs
---     build-depends:
---         base,
---         http2 >= 5.2.4,
---         bytestring >= 0.12.1.0,
---         network >= 3.2.0.0,
---         network-run >= 0.3.0,
+executable ffi
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:
+        base,
+        http2 >= 5.2.4,
+        bytestring >= 0.12.1.0,
+        network >= 3.2.0.0,
+        network-run >= 0.3.0,
+        time,
 
---     hs-source-dirs:   ffi
---     default-language: GHC2021
---     ghc-options: -threaded -rtsopts -debug
+    hs-source-dirs:   ffi
+    default-language: GHC2021
+    ghc-options: -threaded -rtsopts -debug
