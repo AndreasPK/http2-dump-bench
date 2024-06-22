@@ -41,6 +41,7 @@ import Network.Socket.Internal
 import Network.Socket.Name
 import Network.Socket.Types
 import Network.Socket.Flag
+import Network.Socket.Options
 
 import Debug.Trace
 import Foreign.C.Error

@@ -41,8 +41,11 @@ main = do
     client 10000
 
 server :: IO ()
-server = runTCPServer (Just "127.0.0.1") "3000" talk
+server = runTCPServer (Just "127.0.0.1") "3001" (prep talk)
   where
+    prep talk s = do
+      setSockOpt s NoDelay (1::Int)
+      talk s
     talk s = do
         forM_ [0..100 :: Int] $ \i -> do
             exchange "server:" (readBytes s) (sendBytes s) (sendBytes s)
@@ -93,13 +96,14 @@ exchange side sb rb rbm = do
 
 client :: Int -> IO ()
 client n = do
-  runTCPClient "127.0.0.1" "3000" (myClient)
+  runTCPClient "127.0.0.1" "3001" (myClient)
   where
     myClient s = do
       -- let msg_client = (S.replicate 25 65)
       -- print msg_client
       -- sendAll s msg_client
       -- threadDelay 100_000
+      setSockOpt s NoDelay ((1::Int))
       loop (Just 0) s
 
     loop Nothing s = putStrLn "done"
